@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Dialog compaction",
+    "description": "Builds a short extractive summary of a session log without a neural network: task, what was done, files, commands, open questions, and errors. Works locally with no network requests. Provides the dialog_compact agent tool and a settings card with session selection and summary size.",
+    "detail": "docs/DETAIL.md"
+  }
+}
