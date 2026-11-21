@@ -126,7 +126,9 @@ test('client: фабрика, словари и регистрация карт�
   const collapsed = collectText(slots[0].component()).join(' ')
   assert.ok(collapsed.includes('t:heading'))
   assert.ok(collapsed.includes('t:hint'))
-  assert.ok(collapsed.includes('t:open'))
+  // Кнопка «Открыть» заменена значком-шевроном без текста: достаточно того,
+  // что свёрнутая карточка отрисовалась и содержит заголовок с подсказкой.
+  assert.ok(collapsed.trim().length > 0)
 })
 
 test('client: развёрнутая карточка показывает выбор сессии, бюджет и «Сжать»', () => {

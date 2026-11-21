@@ -267,6 +267,54 @@ window.__ModuleLoader__.load({
         children,
       )
     }
+    /** Кнопка-шеврон: развернуть и свернуть. Виден в любой теме (currentColor). */
+    function ToggleIcon({ open, onClick }) {
+      return h(
+        'button',
+        {
+          type: 'button',
+          onClick,
+          title: open ? 'Свернуть' : 'Открыть',
+          'aria-label': open ? 'Свернуть' : 'Открыть',
+          'aria-expanded': open ? 'true' : 'false',
+          style: {
+            marginLeft: 'auto',
+            flex: '0 0 auto',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 28,
+            height: 28,
+            padding: 0,
+            borderRadius: 8,
+            border: '1px solid rgba(128,128,128,0.32)',
+            background: 'rgba(128,128,128,0.1)',
+            color: 'inherit',
+            cursor: 'pointer',
+          },
+        },
+        h(
+          'svg',
+          {
+            width: 16,
+            height: 16,
+            viewBox: '0 0 24 24',
+            fill: 'none',
+            'aria-hidden': 'true',
+            focusable: 'false',
+            style: { transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s ease' },
+          },
+          h('path', {
+            d: 'M6 15l6-6 6 6',
+            stroke: 'currentColor',
+            strokeWidth: 2,
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+          }),
+        ),
+      )
+    }
+
 
 function CompactCard() {
       const t = (key, params) => translate(key, params)
@@ -374,7 +422,7 @@ function CompactCard() {
           },
           h('span', { style: { fontWeight: 600 } }, t('heading')),
           h('span', { style: { fontSize: 12, opacity: 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, t('hint')),
-          h('button', { style: { ...S.primary, marginLeft: 'auto', flex: '0 0 auto' }, onClick: () => setOpen(true) }, t('open')),
+          h(ToggleIcon, { open: false, onClick: () => setOpen(true) }),
         )
       }
 
@@ -456,8 +504,8 @@ function CompactCard() {
             },
             busy ? t('compressing') : t('compress'),
           ),
-          h('button', { style: S.button, onClick: collapse }, t('collapse')),
-          result === null ? null : h('button', { style: S.button, onClick: () => void copy() }, t('copy')),
+          h(ToggleIcon, { open: true, onClick: () => setOpen(false) }),
+        result === null ? null : h('button', { style: S.button, onClick: () => void copy() }, t('copy')),
         ),
 
         error === '' ? null : h('div', { style: S.error }, error),
