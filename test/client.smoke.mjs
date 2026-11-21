@@ -79,7 +79,7 @@ function makeClientContext() {
     },
     slots: {
       inject(name, callback) {
-        assert.equal(name, 'plugins.item')
+        assert.equal(name, 'plugins.detail.section')
         callback()
       },
       register(options, component) {
@@ -117,13 +117,13 @@ test('client: фабрика, словари и регистрация карт�
   )
 
   assert.equal(slots.length, 1)
-  assert.equal(slots[0].options.name, 'plugins.item')
-  assert.equal(slots[0].options.id, 'dsh-compact')
+  assert.equal(slots[0].options.name, 'plugins.detail.section')
+  assert.equal(slots[0].options.id, 'dsh-compact-detail')
   assert.equal(slots[0].options.locale, 'dshCompact')
   assert.equal(typeof slots[0].component, 'function')
 
   // Свёрнутое состояние: заголовок, подсказка и кнопка «Открыть».
-  const collapsed = collectText(slots[0].component()).join(' ')
+  const collapsed = collectText(slots[0].component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
   assert.ok(collapsed.includes('t:heading'))
   assert.ok(collapsed.includes('t:hint'))
   // Кнопка «Открыть» заменена значком-шевроном без текста: достаточно того,
@@ -143,7 +143,7 @@ test('client: развёрнутая карточка показывает вы�
   const { ctx, slots } = makeClientContext()
   module.apply(ctx)
 
-  const expanded = collectText(slots[0].component()).join(' ')
+  const expanded = collectText(slots[0].component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
   assert.ok(expanded.includes('t:sessionLabel'))
   assert.ok(expanded.includes('t:budgetLabel'))
   assert.ok(expanded.includes('t:saveLabel'))

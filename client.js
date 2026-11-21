@@ -531,21 +531,40 @@ function CompactCard() {
       )
     }
 
+    /** Содержимое карточки на странице своего плагина. */
+    function DetailCard_dshcompact(props) {
+      const subject = props?.subject
+      const packageName =
+        subject?.kind === 'bundle' && typeof subject?.pkg?.name === 'string'
+          ? subject.pkg.name
+          : typeof subject?.id === 'string'
+            ? subject.id
+            : ''
+      if (packageName !== 'dsh-compact') return null
+      const content = () => h(CardFrame, null, h(CompactCard))
+      return typeof content === 'function' ? content(props) : content
+    }
+
     function apply(ctx) {
       ctx.locale.register(NS, { en, ru })
       translate = ctx.locale.bind(NS)
 
       try {
-        ctx.slots.inject('plugins.item', () => ctx.slots.register(
-          {
-            name: 'plugins.item',
-            id: 'dsh-compact',
-            order: 60,
-            label: () => translate('title'),
-            locale: NS,
-          },
-          () => h(CardFrame, null, h(CompactCard)),
-        ))
+              try {
+        ctx.slots.inject('plugins.detail.section', () =>
+          ctx.slots.register(
+            {
+              name: 'plugins.detail.section',
+              id: 'dsh-compact-detail',
+              order: 45,
+              locale: NS,
+            },
+            DetailCard_dshcompact,
+          ),
+        )
+      } catch (error) {
+        console.error('[dsh-compact] секция страницы недоступна:', error)
+      }
       } catch (error) {
         console.error('[dsh-compact] карточка недоступна:', error)
       }
