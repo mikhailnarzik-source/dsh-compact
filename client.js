@@ -455,8 +455,14 @@ function CompactCard() {
           )
 
       return h(
+      'div',
+      { style: S.card },
+      h(
         'div',
-        { style: S.card },
+        { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        h('span', { style: { fontSize: 13.5, fontWeight: 600 } }, t('heading')),
+        h(ToggleIcon, { open: true, onClick: () => setOpen(false) }),
+      ),
         h('span', { style: S.heading }, t('heading')),
         h('span', { style: S.hint }, t('hint')),
 
@@ -504,7 +510,6 @@ function CompactCard() {
             },
             busy ? t('compressing') : t('compress'),
           ),
-          h(ToggleIcon, { open: true, onClick: () => setOpen(false) }),
         result === null ? null : h('button', { style: S.button, onClick: () => void copy() }, t('copy')),
         ),
 
