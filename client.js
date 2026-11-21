@@ -82,7 +82,7 @@ window.__ModuleLoader__.load({
     }
 
     const S = {
-      card: { display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, maxWidth: 720 },
+      card: { position: 'relative', paddingRight: 44, display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, maxWidth: 720 },
       heading: { fontSize: 13.5, fontWeight: 600 },
       hint: { fontSize: 12, opacity: 0.72, lineHeight: 1.5 },
       label: { fontSize: 12, fontWeight: 600, opacity: 0.8 },
@@ -278,8 +278,10 @@ window.__ModuleLoader__.load({
           'aria-label': open ? 'Свернуть' : 'Открыть',
           'aria-expanded': open ? 'true' : 'false',
           style: {
-            marginLeft: 'auto',
-            flex: '0 0 auto',
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 2,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
