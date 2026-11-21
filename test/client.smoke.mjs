@@ -29,7 +29,16 @@ function makeReact(states = []) {
   }
 }
 
+/** Развернуть функциональный компонент-обёртку (например, CardFrame). */
+function expand(node) {
+  if (node !== null && typeof node === 'object' && typeof node.type === 'function') {
+    return node.type({ ...(node.props ?? {}), children: node.children })
+  }
+  return node
+}
+
 function collectText(node, out = []) {
+  node = expand(node)
   if (node === null || node === undefined || node === false) return out
   if (typeof node === 'string' || typeof node === 'number') {
     out.push(String(node))

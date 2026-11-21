@@ -248,7 +248,27 @@ window.__ModuleLoader__.load({
       return parts.join(' · ')
     }
 
-    function CompactCard() {
+        /** Рамка карточки: тот же вид, что у остальных наших плагинов. */
+    function CardFrame({ children }) {
+      return h(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1px solid rgba(128,128,128,0.28)',
+            background: 'rgba(128,128,128,0.07)',
+            boxSizing: 'border-box',
+          },
+        },
+        children,
+      )
+    }
+
+function CompactCard() {
       const t = (key, params) => translate(key, params)
       const [open, setOpen] = React.useState(false)
       const [state, setState] = React.useState(null)
@@ -466,7 +486,7 @@ window.__ModuleLoader__.load({
             label: () => translate('title'),
             locale: NS,
           },
-          CompactCard,
+          () => h(CardFrame, null, h(CompactCard)),
         ))
       } catch (error) {
         console.error('[dsh-compact] карточка недоступна:', error)
