@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Dialog compaction",
-    "description": "Builds a short extractive summary of a session log without a neural network: task, what was done, files, commands, open questions, and errors. Works locally with no network requests. Provides the dialog_compact agent tool and a settings card with session selection and summary size.",
+    "description": "Compacts a long dialog into a short extract without a neural network: it reads the session log (the file where DSH records the conversation) and builds the sections “Task”, “What was done”, “Files”, “Commands”, “Open questions”, “Errors”. Everything runs locally — no network calls and no tokens spent. Open it under Settings → Plugins → “Dialog compaction” to choose a session and the summary size. The agent can also call it itself with the dialog_compact tool.",
     "detail": "docs/DETAIL.md"
   }
 }
