@@ -79,8 +79,7 @@ function makeClientContext() {
     },
     slots: {
       inject(name, callback) {
-        assert.equal(name, 'plugins.detail.section')
-        callback()
+        return callback()
       },
       register(options, component) {
         slots.push({ options, component })
@@ -116,14 +115,16 @@ test('client: фабрика, словари и регистрация карт�
     'словари en и ru должны содержать одинаковые ключи',
   )
 
-  assert.equal(slots.length, 1)
-  assert.equal(slots[0].options.name, 'plugins.detail.section')
-  assert.equal(slots[0].options.id, 'dsh-compact-detail')
-  assert.equal(slots[0].options.locale, 'dshCompact')
-  assert.equal(typeof slots[0].component, 'function')
+  // Панель левого меню регистрируется всегда, строка — по состоянию закрепления,
+  // поэтому карточку страницы плагина ищем по имени слота, а не по индексу.
+  const detail = slots.find((item) => item.options.name === 'plugins.detail.section')
+  assert.ok(detail, 'секция plugins.detail.section зарегистрирована')
+  assert.equal(detail.options.id, 'dsh-compact-detail')
+  assert.equal(detail.options.locale, 'dshCompact')
+  assert.equal(typeof detail.component, 'function')
 
   // Свёрнутое состояние: заголовок, подсказка и кнопка «Открыть».
-  const collapsed = collectText(slots[0].component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
+  const collapsed = collectText(detail.component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
   assert.ok(collapsed.includes('t:heading'))
   assert.ok(collapsed.includes('t:hint'))
   // Кнопка «Открыть» заменена значком-шевроном без текста: достаточно того,
@@ -143,7 +144,9 @@ test('client: развёрнутая карточка показывает вы�
   const { ctx, slots } = makeClientContext()
   module.apply(ctx)
 
-  const expanded = collectText(slots[0].component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
+  const detail = slots.find((item) => item.options.name === 'plugins.detail.section')
+  assert.ok(detail, 'секция plugins.detail.section зарегистрирована')
+  const expanded = collectText(detail.component({ subject: { kind: 'bundle', pkg: { name: 'dsh-compact' } } })).join(' ')
   assert.ok(expanded.includes('t:sessionLabel'))
   assert.ok(expanded.includes('t:budgetLabel'))
   assert.ok(expanded.includes('t:saveLabel'))

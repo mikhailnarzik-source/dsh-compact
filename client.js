@@ -7,7 +7,10 @@
  * только показывает результат, чтобы не тащить распаковку журнала в страницу.
  *
  * Страница открыта по умолчанию и оформлена в едином стиле DSH; шеврон в
- * шапке сворачивает её до одной строки.
+ * шапке сворачивает её до одной строки. Тот же экран регистрируется как
+ * собственная панель в левой меню (`main` + `sidebar.panellist`, ключ
+ * `plugin-compact`): клик по иконке открывает настройки, а не страницу
+ * плагин-менеджера.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-compact',
@@ -21,9 +24,27 @@ window.__ModuleLoader__.load({
     const STATE_PATH = '/api/dsh-compact/state'
     const PREVIEW_PATH = '/api/dsh-compact/preview'
     const DEFAULT_BUDGET = 6000
+    /**
+     * Панель в левой панели: ключ `main` и id строки `sidebar.panellist`
+     * совпадают (`plugin-compact`) — хост открывает страницу по этому id.
+     * `PANEL_ORDER` — позиция в общем списке панелей «Оформления интерфейса»
+     * (20 + индекс: карточки 0, сжатие 1, ревью 2, …).
+     */
+    const PANEL_ID = 'plugin-compact'
+    const PANEL_EMOJI = '🗜️'
+    const PANEL_ORDER = 21
+    /**
+     * id плагина в состоянии видимости панелей: его ведёт «Оформление
+     * интерфейса» (`dsh-polish`) в localStorage. Пока состояния нет или оно
+     * битое, панель считаем закреплённой — так же, как в настройках оформления.
+     */
+    const PANEL_STATE_ID = 'compact'
+    const PANEL_STATE_KEY = 'dsh-polish:panel-visibility'
+    const PANELS_CHANGED_EVENT = 'dsh-polish:panels-changed'
 
     const en = {
       title: 'Dialog compaction',
+      panelSubtitle: 'Compress a long dialog locally.',
       heading: 'Dialog compaction',
       hint: 'Builds a short extractive summary of a session log — locally, without a neural network and without network requests.',
       open: 'Open',
@@ -59,6 +80,7 @@ window.__ModuleLoader__.load({
     }
     const ru = {
       title: 'Сжатие диалога',
+      panelSubtitle: 'Локальное сжатие длинного диалога.',
       heading: 'Сжатие диалога',
       hint: 'Строит короткую выжимку журнала сессии — локально, без нейросети и без сетевых запросов.',
       open: 'Открыть',
@@ -170,6 +192,7 @@ window.__ModuleLoader__.load({
         lineHeight: 1.55,
         color: 'var(--dsw-alias-label-primary)',
       },
+      body: { display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 },
       head: { display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
       icon: {
         boxSizing: 'border-box',
@@ -502,7 +525,13 @@ window.__ModuleLoader__.load({
     }
 
 
-function CompactCard() {
+    /**
+     * Страница настроек: на странице плагина рисует себя целиком (шапка, карточки),
+     * а в панели левого меню — только содержимое (`bare`), потому что шапку и
+     * отступы даёт `CompactPanelPage`.
+     */
+    function CompactCard(props) {
+      const bare = props?.bare === true
       const t = (key, params) => translate(key, params)
       const [open, setOpen] = React.useState(true)
       const [state, setState] = React.useState(null)
@@ -648,23 +677,27 @@ function CompactCard() {
             ? t('statusReady')
             : t('statusIdle')
 
-      const blocks = [
-        h('style', { key: 'page-css' }, PAGE_CSS),
-        h(PageHeader, {
-          key: 'page-head',
-          icon: '🗜️',
-          title: t('heading'),
-          subtitle: t('hint'),
-          chipLabel,
-          chipTone,
-          refreshLabel: t('refresh'),
-          onRefresh: refresh,
-          open,
-          onToggle: toggleOpen,
-        }),
+      const blocks = bare
+        ? []
+        : [
+            h('style', { key: 'page-css' }, PAGE_CSS),
+            h(PageHeader, {
+              key: 'page-head',
+              icon: '🗜️',
+              title: t('heading'),
+              subtitle: t('hint'),
+              chipLabel,
+              chipTone,
+              refreshLabel: t('refresh'),
+              onRefresh: refresh,
+              open,
+              onToggle: toggleOpen,
+            }),
+          ]
+      blocks.push(
         error === '' ? null : h(Alert, { key: 'error', tone: 'error', text: error }),
         notice === '' ? null : h(Alert, { key: 'notice', tone: 'success', text: notice }),
-      ]
+      )
 
       if (open) {
         blocks.push(
@@ -735,7 +768,140 @@ function CompactCard() {
         )
       }
 
-      return h('div', { className: 'dshcm-page', style: UI.page }, blocks)
+      return h(
+        'div',
+        bare
+          ? { className: 'dshcm-page-body', style: UI.body }
+          : { className: 'dshcm-page', style: UI.page },
+        blocks,
+      )
+    }
+
+    /** Заголовок панели: эмодзи-иконка, название плагина и короткий подзаголовок. */
+    function PanelHeader() {
+      return h(
+        'div',
+        { className: 'dshcm-panel-head', style: UI.head },
+        h('span', { style: UI.icon, 'aria-hidden': 'true' }, PANEL_EMOJI),
+        h(
+          'div',
+          { style: UI.headText },
+          h('h1', { style: UI.title }, translate('title')),
+          h('p', { style: UI.subtitle }, translate('panelSubtitle')),
+        ),
+      )
+    }
+
+    /**
+     * Главная панель плагина: та же страница настроек в центрированной колонке
+     * (maxWidth 960), но без страницы плагин-менеджера — только шапка плагина и
+     * его элементы управления.
+     */
+    function CompactPanelPage() {
+      return h(
+        'section',
+        { className: 'dshcm-page', style: UI.page, 'aria-label': translate('title'), 'data-dsh-panel': PANEL_ID },
+        h('style', { key: 'page-css' }, PAGE_CSS),
+        h(PanelHeader, { key: 'panel-head' }),
+        h(CompactCard, { key: 'settings', bare: true }),
+      )
+    }
+
+    /** Иконка строки левой панели: эмодзи в размер, который просит хост. */
+    function PanelIcon(props) {
+      const requested = Number(props?.size)
+      const size = Number.isFinite(requested) && requested > 0 ? requested : 16
+      return h(
+        'span',
+        {
+          'data-dsh-panel-icon': PANEL_STATE_ID,
+          'aria-hidden': true,
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: size,
+            height: size,
+            fontSize: Math.round(size * 0.95),
+            lineHeight: 1,
+          },
+        },
+        PANEL_EMOJI,
+      )
+    }
+
+    /** Закреплена ли панель: состояние ведёт «Оформление интерфейса» (dsh-polish). */
+    function isPanelPinned() {
+      try {
+        if (typeof localStorage === 'undefined' || localStorage === null) return true
+        const raw = localStorage.getItem(PANEL_STATE_KEY)
+        // Пока оформление не сохраняло состояние, все панели видны и закреплены.
+        if (raw === null || raw === '') return true
+        const state = JSON.parse(raw)
+        if (!Array.isArray(state?.pinned)) return true
+        return state.pinned.includes(PANEL_STATE_ID) || state.pinned.includes(PANEL_ID)
+      } catch {
+        return true
+      }
+    }
+
+    /**
+     * Панель в левой панели: `main` регистрируется всегда (она есть и в меню
+     * «Ещё»), строка `sidebar.panellist` — только когда панель закреплена.
+     * Событие `dsh-polish:panels-changed` приходит из «Оформления интерфейса»
+     * после закрепления/открепления: перечитываем состояние и перерегистрируем
+     * строку, сняв прошлую регистрацию.
+     */
+    function registerPanels(ctx) {
+      try {
+        ctx.slots.inject('main', () =>
+          ctx.slots.register({ name: 'main', key: PANEL_ID }, CompactPanelPage),
+        )
+      } catch (error) {
+        console.error('[dsh-compact] панель в левом меню недоступна:', error)
+      }
+
+      let disposeSidebar = null
+      const syncSidebar = () => {
+        if (typeof disposeSidebar === 'function') {
+          try {
+            disposeSidebar()
+          } catch (error) {
+            console.error('[dsh-compact] не удалось снять строку левой панели:', error)
+          }
+          disposeSidebar = null
+        }
+        if (!isPanelPinned()) return
+        try {
+          let dispose = null
+          const outer = ctx.slots.inject('sidebar.panellist', () => {
+            dispose = ctx.slots.register(
+              {
+                name: 'sidebar.panellist',
+                id: PANEL_ID,
+                order: PANEL_ORDER,
+                label: () => translate('title'),
+                locale: NS,
+              },
+              PanelIcon,
+            )
+            return dispose
+          })
+          disposeSidebar = typeof dispose === 'function' ? dispose : outer
+        } catch (error) {
+          disposeSidebar = null
+          console.error('[dsh-compact] строка в левой панели недоступна:', error)
+        }
+      }
+      syncSidebar()
+
+      try {
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+          window.addEventListener(PANELS_CHANGED_EVENT, syncSidebar)
+        }
+      } catch (error) {
+        console.error('[dsh-compact] событие панелей недоступно:', error)
+      }
     }
 
     /** Содержимое карточки на странице своего плагина. */
@@ -755,8 +921,10 @@ function CompactCard() {
       ctx.locale.register(NS, { en, ru })
       translate = ctx.locale.bind(NS)
 
+      // Панель в левом меню: main — всегда, строка sidebar — только если закреплена.
+      registerPanels(ctx)
+
       try {
-              try {
         ctx.slots.inject('plugins.detail.section', () =>
           ctx.slots.register(
             {
@@ -770,9 +938,6 @@ function CompactCard() {
         )
       } catch (error) {
         console.error('[dsh-compact] секция страницы недоступна:', error)
-      }
-      } catch (error) {
-        console.error('[dsh-compact] карточка недоступна:', error)
       }
     }
 

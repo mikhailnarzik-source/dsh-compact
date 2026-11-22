@@ -11,6 +11,7 @@ import zlib from 'node:zlib'
 // разрешается в этот файл, а остальные наборы тестов подключаются импортом.
 import './host.smoke.mjs'
 import './client.smoke.mjs'
+import './panel.test.mjs'
 
 import {
   DEFAULT_BUDGET,
