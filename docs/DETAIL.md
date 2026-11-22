@@ -250,3 +250,12 @@ node --check index.js
 node --check client.js
 node --test test/
 ```
+
+## Прокрутка страниц
+
+Сжатие диалога: корень `.dshcm-page` (main-панель и секция `plugins.detail.section`) прокручивается по вертикали, если контент выше окна. Корень не имеет фиксированной высоты в px:
+`box-sizing:border-box; width:100%; min-height:0; max-height:100%; overflow-y:auto; overscroll-behavior:contain; padding-bottom` (+ `flex:1 1 auto` для flex-родителя), вложенные блоки с `max-height` прокручиваются внутри.
+
+Проверено headless на высотах окна 700/800 px и ширинах 1280/1024/768/480 px: страница докручивается до последнего элемента (`bottomReachable`), горизонтальной прокрутки страницы нет.
+
+Тест: `node --test test/scroll.test.mjs`.

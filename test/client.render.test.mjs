@@ -294,7 +294,7 @@ test('адаптив: сетка auto-fit, перенос кнопок и дли
 
   assert.match(SOURCE, /overflowWrap: 'anywhere'/, 'у подсказок есть overflow-wrap:anywhere')
   const css = pageCss(nodes)
-  assert.match(css, /\.dshcm-page\{overflow-wrap:anywhere;\}/)
+  assert.match(css, /\.dshcm-page\{overflow-wrap:anywhere;[^}]*overflow-y:auto[^}]*\}/, 'корень страницы прокручивается')
   assert.match(css, /\.dshcm-page-actions\{[^}]*flex-wrap:wrap/)
   assert.match(css, /\.dshcm-page-actions\{[^}]*margin-top:auto/, 'футер прижат к низу')
 })
