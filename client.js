@@ -6,8 +6,8 @@
  * Вся тяжёлая работа — на host-части через `/api/dsh-compact/*`; браузер
  * только показывает результат, чтобы не тащить распаковку журнала в страницу.
  *
- * Карточка по умолчанию свёрнута: в общем списке плагинов она не должна
- * занимать пол-экрана.
+ * Страница открыта по умолчанию и оформлена в едином стиле DSH; шеврон в
+ * шапке сворачивает её до одной строки.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-compact',
@@ -50,6 +50,12 @@ window.__ModuleLoader__.load({
       errorPreview: 'Could not build the summary',
       errorNetwork: 'Host part did not respond: {message}',
       journal: 'Journal: {path}',
+      refresh: 'Refresh',
+      settingsLabel: 'Parameters',
+      statusIdle: 'Ready',
+      statusReady: 'Summary ready',
+      statusError: 'Error',
+      sessionsEmptyHint: 'Run a session and it appears in the list.',
     }
     const ru = {
       title: 'Сжатие диалога',
@@ -79,69 +85,201 @@ window.__ModuleLoader__.load({
       errorPreview: 'Не удалось построить выжимку',
       errorNetwork: 'Host-часть не ответила: {message}',
       journal: 'Журнал: {path}',
+      refresh: 'Обновить',
+      settingsLabel: 'Параметры',
+      statusIdle: 'Готово',
+      statusReady: 'Выжимка готова',
+      statusError: 'Ошибка',
+      sessionsEmptyHint: 'Запустите сессию — она появится в списке.',
     }
 
-    const S = {
-      card: { display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, maxWidth: 720 },
-      heading: { fontSize: 13.5, fontWeight: 600 },
-      hint: { fontSize: 12, opacity: 0.72, lineHeight: 1.5 },
-      label: { fontSize: 12, fontWeight: 600, opacity: 0.8 },
-      field: { display: 'flex', flexDirection: 'column', gap: 5 },
-      row: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-      select: {
+    /**
+     * Страница плагина в едином стиле DSH: контент по центру (maxWidth 960),
+     * шапка с иконкой и статусом, карточки-секции, адаптив в одну колонку.
+     * Цвета — только токены темы; жёстких hex нет.
+     */
+    const UI = {
+      page: {
+        boxSizing: 'border-box',
         width: '100%',
-        boxSizing: 'border-box',
-        height: 32,
-        padding: '0 8px',
-        borderRadius: 8,
-        border: '1px solid rgba(128,128,128,0.35)',
-        background: 'transparent',
-        color: 'inherit',
-        font: 'inherit',
+        maxWidth: 960,
+        margin: '0 auto',
+        padding: '24px 28px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
         fontSize: 13,
-        colorScheme: 'inherit',
+        lineHeight: 1.55,
+        color: 'var(--dsw-alias-label-primary)',
       },
-      input: {
-        width: 160,
+      head: { display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
+      icon: {
         boxSizing: 'border-box',
-        height: 32,
-        padding: '0 10px',
-        borderRadius: 8,
-        border: '1px solid rgba(128,128,128,0.35)',
-        background: 'transparent',
-        color: 'inherit',
-        font: 'inherit',
-        fontSize: 13,
-        colorScheme: 'inherit',
+        flex: '0 0 auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 52,
+        height: 52,
+        borderRadius: 14,
+        fontSize: 26,
+        lineHeight: 1,
+        background: 'color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 28%, transparent)',
       },
-      button: {
-        padding: '6px 14px',
-        borderRadius: 8,
-        border: '1px solid rgba(128,128,128,0.35)',
-        background: 'rgba(128,128,128,0.12)',
-        color: 'inherit',
+      headText: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: '1 1 240px' },
+      title: { margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.25, color: 'var(--dsw-alias-label-primary)' },
+      subtitle: {
+        margin: 0,
+        fontSize: 12.5,
+        fontWeight: 400,
+        lineHeight: 1.5,
+        color: 'var(--dsw-alias-label-secondary)',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+      },
+      headRight: { display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flex: '0 0 auto' },
+      chip: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '3px 9px',
+        borderRadius: 999,
+        fontSize: 12,
+        color: 'var(--dsw-alias-label-secondary)',
+        background: 'color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent)',
+        whiteSpace: 'nowrap',
+      },
+      dot: { width: 7, height: 7, borderRadius: '50%', flex: '0 0 auto' },
+      refresh: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 32,
+        padding: '0 12px',
+        borderRadius: 10,
+        border: '1px solid var(--dsw-alias-border-l4)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-primary)',
         font: 'inherit',
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: 600,
         cursor: 'pointer',
+      },
+      iconButton: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 28,
+        height: 28,
+        padding: 0,
+        borderRadius: 8,
+        border: '1px solid var(--dsw-alias-border-l4)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-secondary)',
+        cursor: 'pointer',
+      },
+      card: {
+        boxSizing: 'border-box',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        padding: 16,
+        borderRadius: 14,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-1)',
+      },
+      sectionHead: { display: 'flex', alignItems: 'center', gap: 8 },
+      bar: { flex: '0 0 auto', width: 3, height: 14, borderRadius: 2, background: 'var(--dsw-alias-brand-primary)' },
+      sectionTitle: { margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: 'var(--dsw-alias-label-primary)' },
+      grid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 16,
+        alignItems: 'start',
+      },
+      field: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 },
+      label: { fontSize: 12, fontWeight: 600, color: 'var(--dsw-alias-label-secondary)' },
+      hint: { fontSize: 12, lineHeight: 1.5, color: 'var(--dsw-alias-label-tertiary)', overflowWrap: 'anywhere' },
+      input: {
+        boxSizing: 'border-box',
+        width: '100%',
+        height: 34,
+        padding: '0 10px',
+        borderRadius: 9,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-2)',
+        color: 'var(--dsw-alias-label-primary)',
+        font: 'inherit',
+        fontSize: 12.5,
+      },
+      select: {
+        boxSizing: 'border-box',
+        width: '100%',
+        height: 34,
+        padding: '0 8px',
+        borderRadius: 9,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-2)',
+        color: 'inherit',
+        font: 'inherit',
+        fontSize: 12.5,
+        colorScheme: 'inherit',
       },
       primary: {
-        padding: '6px 14px',
-        borderRadius: 8,
-        border: '1px solid rgba(80,120,200,0.55)',
-        background: 'rgba(80,120,200,0.18)',
-        color: 'inherit',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 36,
+        padding: '0 14px',
+        borderRadius: 10,
+        border: '1px solid transparent',
+        background: 'var(--dsw-alias-button-primary-fill)',
+        color: 'var(--dsw-alias-label-primary-inverted)',
         font: 'inherit',
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: 600,
         cursor: 'pointer',
+      },
+      secondary: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 36,
+        padding: '0 14px',
+        borderRadius: 10,
+        border: '1px solid var(--dsw-alias-border-l4)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-primary)',
+        font: 'inherit',
+        fontSize: 12.5,
+        fontWeight: 600,
+        cursor: 'pointer',
+      },
+      actions: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+      counters: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 },
+      badge: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '3px 9px',
+        borderRadius: 999,
+        fontSize: 12,
+        color: 'var(--dsw-alias-label-secondary)',
+        background: 'color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent)',
       },
       pre: {
         margin: 0,
-        padding: '10px 12px',
-        borderRadius: 10,
-        border: '1px solid rgba(128,128,128,0.28)',
-        background: 'rgba(128,128,128,0.07)',
+        boxSizing: 'border-box',
+        width: '100%',
+        padding: '12px 14px',
+        borderRadius: 12,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-2)',
+        color: 'var(--dsw-alias-label-primary)',
         fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace',
         fontSize: 12,
         lineHeight: 1.5,
@@ -150,35 +288,27 @@ window.__ModuleLoader__.load({
         maxHeight: 340,
         overflow: 'auto',
       },
-      meta: { fontSize: 12, opacity: 0.72, lineHeight: 1.5 },
-      counters: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 },
-      badge: {
-        display: 'inline-flex',
+      checkboxRow: { display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)' },
+      empty: {
+        display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        padding: '2px 9px',
-        borderRadius: 999,
-        border: '1px solid rgba(40,150,80,0.4)',
-        background: 'rgba(40,150,80,0.12)',
-        fontSize: 12,
-        fontWeight: 600,
+        justifyContent: 'center',
+        gap: 6,
+        padding: '24px 12px',
+        textAlign: 'center',
       },
-      error: {
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: '8px 10px',
-        borderRadius: 8,
-        border: '1px solid rgba(209,36,47,0.35)',
-        background: 'rgba(209,36,47,0.12)',
-      },
-      notice: {
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: '8px 10px',
-        borderRadius: 8,
-        background: 'rgba(128,128,128,0.10)',
-      },
-      checkboxRow: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12.5 },
+      emptyIcon: { fontSize: 32, lineHeight: 1 },
+      emptyText: { fontSize: 12.5, lineHeight: 1.5, color: 'var(--dsw-alias-label-tertiary)' },
     }
+
+    /** CSS, который нельзя задать inline: адаптив, фокус и отключённые кнопки. */
+    const PAGE_CSS = [
+      '.dshcm-page-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}',
+      '.dshcm-page-field:focus-visible,.dshcm-page-primary:focus-visible,.dshcm-page-button:focus-visible,.dshcm-page-refresh:focus-visible,.dshcm-page-icon:focus-visible{outline:2px solid color-mix(in srgb,var(--dsw-alias-brand-primary) 55%,transparent);outline-offset:1px;}',
+      '.dshcm-page-primary:disabled,.dshcm-page-button:disabled{opacity:.55;cursor:default;}',
+      '@media (max-width: 760px){.dshcm-page{padding:18px 16px 32px !important;}.dshcm-page-grid{grid-template-columns:1fr !important;}}',
+    ].join('\n')
 
     let translate = (key) => key
 
@@ -248,55 +378,91 @@ window.__ModuleLoader__.load({
       return parts.join(' · ')
     }
 
-        /** Рамка карточки: тот же вид, что у остальных наших плагинов. */
-    function CardFrame({ children }) {
+    /** Шапка страницы: квадрат с иконкой, заголовок, статус-чип и «Обновить». */
+    function PageHeader({ icon, title, subtitle, chipLabel, chipTone, refreshLabel, onRefresh, open, onToggle }) {
+      return h(
+        'div',
+        { className: 'dshcm-page-head', style: UI.head },
+        h('div', { style: UI.icon }, icon),
+        h(
+          'div',
+          { style: UI.headText },
+          h('h1', { style: UI.title }, title),
+          subtitle !== '' ? h('p', { style: UI.subtitle }, subtitle) : null,
+        ),
+        h(
+          'div',
+          { style: UI.headRight },
+          h('span', { style: UI.chip }, h('span', { style: { ...UI.dot, background: chipTone } }), chipLabel),
+          h(
+            'button',
+            { type: 'button', className: 'dshcm-page-refresh', style: UI.refresh, onClick: onRefresh },
+            refreshLabel,
+          ),
+          onToggle === undefined ? null : h(ToggleIcon, { open, onClick: onToggle }),
+        ),
+      )
+    }
+
+    /** Карточка-секция: акцентная полоска, заголовок 14/600 и содержимое. */
+    function SectionCard({ title, children }) {
+      return h(
+        'section',
+        { style: UI.card },
+        h('div', { style: UI.sectionHead }, h('span', { style: UI.bar }), h('h2', { style: UI.sectionTitle }, title)),
+        children,
+      )
+    }
+
+    /** Плашка ошибки или сообщения: цвет из состояния темы. */
+    function Alert({ tone, text }) {
+      const palette = {
+        error: 'var(--dsw-alias-state-error-primary)',
+        warn: 'var(--dsw-alias-state-warn-primary)',
+        success: 'var(--dsw-alias-state-success-primary)',
+      }
+      const color = palette[tone] ?? palette.error
       return h(
         'div',
         {
           style: {
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            padding: '10px 44px 12px 12px',
-            borderRadius: 10,
-            border: '1px solid rgba(128,128,128,0.28)',
-            background: 'rgba(128,128,128,0.07)',
             boxSizing: 'border-box',
+            padding: '10px 12px',
+            borderRadius: 12,
+            fontSize: 12.5,
+            lineHeight: 1.5,
+            border: `1px solid color-mix(in srgb, ${color} 42%, var(--dsw-alias-border-l2))`,
+            background: `color-mix(in srgb, ${color} 10%, var(--dsw-alias-bg-layer-1))`,
+            color: 'var(--dsw-alias-label-primary)',
           },
         },
-        children,
+        text,
       )
     }
-    /** Кнопка-шеврон: развернуть и свернуть. Виден в любой теме (currentColor). */
+
+    /** Пустое состояние: иконка 32, текст tertiary и подсказка. */
+    function EmptyState({ icon, text, hint }) {
+      return h(
+        'div',
+        { style: UI.empty },
+        h('span', { style: UI.emptyIcon }, icon),
+        h('span', { style: UI.emptyText }, text),
+        hint === '' ? null : h('span', { style: UI.hint }, hint),
+      )
+    }
+
+    /** Кнопка-шеврон: свернуть страницу до шапки или развернуть обратно. */
     function ToggleIcon({ open, onClick }) {
       return h(
         'button',
         {
           type: 'button',
           onClick,
-          title: open ? 'Свернуть' : 'Открыть',
-          'aria-label': open ? 'Свернуть' : 'Открыть',
+          title: open ? translate('collapse') : translate('open'),
+          'aria-label': open ? translate('collapse') : translate('open'),
           'aria-expanded': open ? 'true' : 'false',
-          style: {
-            position: 'absolute',
-            // Свёрнутая карточка: по центру по вертикали. Развёрнутая: в углу.
-            top: open ? 8 : '50%',
-            transform: open ? 'none' : 'translateY(-50%)',
-            right: 8,
-            zIndex: 2,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            padding: 0,
-            borderRadius: 8,
-            border: '1px solid rgba(128,128,128,0.32)',
-            background: 'rgba(128,128,128,0.1)',
-            color: 'inherit',
-            cursor: 'pointer',
-          },
+          className: 'dshcm-page-icon',
+          style: UI.iconButton,
         },
         h(
           'svg',
@@ -323,7 +489,7 @@ window.__ModuleLoader__.load({
 
 function CompactCard() {
       const t = (key, params) => translate(key, params)
-      const [open, setOpen] = React.useState(false)
+      const [open, setOpen] = React.useState(true)
       const [state, setState] = React.useState(null)
       const [loading, setLoading] = React.useState(false)
       const [selectedId, setSelectedId] = React.useState('')
@@ -404,37 +570,29 @@ function CompactCard() {
         }
       }
 
-      const collapse = () => {
-        setOpen(false)
-        // при следующем открытии список сессий перечитается
-        setState(null)
+      const toggleOpen = () => {
+        if (open) {
+          setOpen(false)
+          // при следующем открытии список сессий перечитается
+          setState(null)
+        } else {
+          setOpen(true)
+        }
       }
 
-      if (!open) {
-        return h(
-          'div',
-          {
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '6px 10px',
-              borderRadius: 8,
-              border: '1px solid rgba(128,128,128,0.22)',
-              background: 'rgba(128,128,128,0.05)',
-              fontSize: 13,
-            },
-          },
-          h('span', { style: { fontWeight: 600 } }, t('heading')),
-          h('span', { style: { fontSize: 12, opacity: 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, t('hint')),
-          h(ToggleIcon, { open: false, onClick: () => setOpen(true) }),
-        )
+      /** «Обновить» в шапке: перечитать список сессий и сбросить прошлую выжимку. */
+      const refresh = () => {
+        setState(null)
+        setResult(null)
+        setError('')
+        setNotice('')
       }
 
       const sessionSelect = h(
         'select',
         {
-          style: S.select,
+          className: 'dshcm-page-field',
+          style: UI.select,
           value: selectedId,
           onChange: (event) => {
             setSelectedId(event.target.value)
@@ -454,81 +612,115 @@ function CompactCard() {
         ? null
         : h(
             'div',
-            { style: S.counters },
+            { style: UI.counters },
             h('span', null, t('counters', { before: numberText(result.before), after: numberText(result.after) })),
-            h('span', { style: S.badge }, `−${reductionText(Number(result.before), Number(result.after))}%`),
+            h('span', { style: UI.badge }, `−${reductionText(Number(result.before), Number(result.after))}%`),
           )
 
-      return h(
-      'div',
-      { style: S.card },
-      h(
-        'div',
-        { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-        h('span', { style: { fontSize: 13.5, fontWeight: 600 } }, t('heading')),
-        h(ToggleIcon, { open: true, onClick: () => setOpen(false) }),
-      ),
-        h('span', { style: S.heading }, t('heading')),
-        h('span', { style: S.hint }, t('hint')),
+      // Статус в шапке: ошибка, загрузка, готовая выжимка или ожидание.
+      const chipTone = error !== ''
+        ? 'var(--dsw-alias-state-error-primary)'
+        : loading
+          ? 'var(--dsw-alias-state-warn-primary)'
+          : result !== null
+            ? 'var(--dsw-alias-state-success-primary)'
+            : 'var(--dsw-alias-label-tertiary)'
+      const chipLabel = error !== ''
+        ? t('statusError')
+        : loading
+          ? t('loading')
+          : result !== null
+            ? t('statusReady')
+            : t('statusIdle')
 
-        loading ? h('span', { style: S.meta }, t('loading')) : null,
-        state !== null && state.zstd === false ? h('div', { style: S.error }, t('noZstd')) : null,
+      const blocks = [
+        h('style', { key: 'page-css' }, PAGE_CSS),
+        h(PageHeader, {
+          key: 'page-head',
+          icon: '🗜️',
+          title: t('heading'),
+          subtitle: t('hint'),
+          chipLabel,
+          chipTone,
+          refreshLabel: t('refresh'),
+          onRefresh: refresh,
+          open,
+          onToggle: toggleOpen,
+        }),
+        error === '' ? null : h(Alert, { key: 'error', tone: 'error', text: error }),
+        notice === '' ? null : h(Alert, { key: 'notice', tone: 'success', text: notice }),
+      ]
 
-        h('span', { style: S.label }, t('sessionLabel')),
-        !loading && sessions.length === 0
-          ? h('span', { style: S.meta }, t('sessionsEmpty'))
-          : sessionSelect,
-        journalPath === '' ? null : h('span', { style: S.meta }, t('journal', { path: journalPath })),
-
-        h(
-          'div',
-          { style: S.field },
-          h('span', { style: S.label }, t('budgetLabel')),
-          h('input', {
-            style: S.input,
-            type: 'number',
-            min: minBudget,
-            max: maxBudget,
-            step: 500,
-            value: budget,
-            onChange: (event) => setBudget(event.target.value),
-          }),
-          h('span', { style: S.meta }, t('budgetHint', { min: numberText(minBudget), max: numberText(maxBudget) })),
-        ),
-
-        h(
-          'label',
-          { style: S.checkboxRow },
-          h('input', { type: 'checkbox', checked: saveFile, onChange: (event) => setSaveFile(event.target.checked) }),
-          h('span', null, t('saveLabel')),
-        ),
-
-        h(
-          'div',
-          { style: S.row },
+      if (open) {
+        blocks.push(
           h(
-            'button',
-            {
-              style: S.primary,
-              onClick: () => void compress(),
-              disabled: busy || sessions.length === 0,
-            },
-            busy ? t('compressing') : t('compress'),
+            SectionCard,
+            { key: 'params', title: t('settingsLabel') },
+            loading ? h('span', { style: UI.hint }, t('loading')) : null,
+            state !== null && state.zstd === false ? h(Alert, { tone: 'warn', text: t('noZstd') }) : null,
+            h(
+              'div',
+              { className: 'dshcm-page-grid', style: UI.grid },
+              h(
+                'div',
+                { style: UI.field },
+                h('span', { style: UI.label }, t('sessionLabel')),
+                !loading && sessions.length === 0
+                  ? h(EmptyState, { icon: '📭', text: t('sessionsEmpty'), hint: t('sessionsEmptyHint') })
+                  : sessionSelect,
+                journalPath === '' ? null : h('span', { style: UI.hint }, t('journal', { path: journalPath })),
+              ),
+              h(
+                'div',
+                { style: UI.field },
+                h('span', { style: UI.label }, t('budgetLabel')),
+                h('input', {
+                  className: 'dshcm-page-field',
+                  style: UI.input,
+                  type: 'number',
+                  min: minBudget,
+                  max: maxBudget,
+                  step: 500,
+                  value: budget,
+                  onChange: (event) => setBudget(event.target.value),
+                }),
+                h('span', { style: UI.hint }, t('budgetHint', { min: numberText(minBudget), max: numberText(maxBudget) })),
+              ),
+            ),
+            h(
+              'label',
+              { style: UI.checkboxRow },
+              h('input', { type: 'checkbox', checked: saveFile, onChange: (event) => setSaveFile(event.target.checked) }),
+              h('span', null, t('saveLabel')),
+            ),
           ),
-        result === null ? null : h('button', { style: S.button, onClick: () => void copy() }, t('copy')),
-        ),
+          h(
+            SectionCard,
+            { key: 'result', title: t('resultLabel') },
+            h(
+              'div',
+              { style: UI.actions },
+              h(
+                'button',
+                {
+                  className: 'dshcm-page-primary',
+                  style: UI.primary,
+                  onClick: () => void compress(),
+                  disabled: busy || sessions.length === 0,
+                },
+                busy ? t('compressing') : t('compress'),
+              ),
+              result === null
+                ? null
+                : h('button', { className: 'dshcm-page-button', style: UI.secondary, onClick: () => void copy() }, t('copy')),
+            ),
+            counters,
+            h('pre', { style: UI.pre }, result === null ? t('resultEmpty') : String(result.markdown ?? '')),
+          ),
+        )
+      }
 
-        error === '' ? null : h('div', { style: S.error }, error),
-        notice === '' ? null : h('div', { style: S.notice }, notice),
-        counters,
-
-        h('span', { style: S.label }, t('resultLabel')),
-        h(
-          'pre',
-          { style: S.pre },
-          result === null ? t('resultEmpty') : String(result.markdown ?? ''),
-        ),
-      )
+      return h('div', { className: 'dshcm-page', style: UI.page }, blocks)
     }
 
     /** Содержимое карточки на странице своего плагина. */
@@ -541,8 +733,7 @@ function CompactCard() {
             ? subject.id
             : ''
       if (packageName !== 'dsh-compact') return null
-      const content = () => h(CardFrame, null, h(CompactCard))
-      return typeof content === 'function' ? content(props) : content
+      return h(CompactCard)
     }
 
     function apply(ctx) {
