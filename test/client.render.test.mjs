@@ -164,10 +164,23 @@ test('шапка: иконка 52, заголовок 20/600, статус-чи�
   assert.equal(title.props.style.fontWeight, 600)
   assert.ok(textsOf(title).includes('t:heading'))
 
-  const chip = nodes.find((node) => node.props?.style?.borderRadius === 999)
+  const chip = nodes.find((node) => node.props?.['data-dsh-compact-chip'] === 'status')
   assert.ok(chip, 'нет статус-чипа')
-  assert.equal(chip.props.style.display, 'inline-flex')
+  const chipStyle = chip.props.style
+  assert.equal(chipStyle.display, 'inline-flex')
+  assert.equal(chipStyle.borderRadius, 10, 'чип — не пилюля, а кнопка: radius 10')
+  assert.equal(chipStyle.height, 32, 'в шапке чип height 32')
+  assert.equal(chipStyle.padding, '0 12px')
+  assert.match(chipStyle.border, /^1px solid /, 'у чипа рамка 1px')
+  assert.equal(chipStyle.fontWeight, 600)
+  assert.equal(chipStyle.fontSize, 12.5)
+  assert.equal(chipStyle.gap, 6)
   assert.ok(textsOf(chip).includes('t:statusIdle'))
+  const dot = nodes.find(
+    (node) => node.props?.style?.width === 6 && node.props?.style?.height === 6 && node.props?.style?.borderRadius === '50%',
+  )
+  assert.ok(dot, 'нет точки-индикатора 6px у чипа')
+  assert.equal(dot.props.style.background, 'currentColor')
 
   const refresh = nodes.find(
     (node) => node.type === 'button' && textsOf(node).includes('t:refresh'),
@@ -308,9 +321,16 @@ test('чип показывает готовую выжимку и её счёт
     '',
   ]
   const { nodes } = renderDetail(states)
-  const chip = nodes.find((node) => node.props?.style?.borderRadius === 999)
+  const chip = nodes.find((node) => node.props?.['data-dsh-compact-chip'] === 'status')
   assert.ok(chip, 'нет статус-чипа')
+  assert.equal(chip.props.style.borderRadius, 10)
+  assert.equal(chip.props.style.height, 32)
   assert.ok(textsOf(chip).includes('t:statusReady'))
+  const badge = nodes.find((node) => node.props?.['data-dsh-compact-chip'] === 'reduction')
+  assert.ok(badge, 'нет бейджа с процентом сжатия')
+  assert.equal(badge.props.style.borderRadius, 10, 'бейдж — тоже кнопочный чип')
+  assert.equal(badge.props.style.height, 32)
+  assert.match(badge.props.style.border, /^1px solid /)
   assert.ok(
     nodes.some((node) => node.type === 'button' && textsOf(node).includes('t:copy')),
     'нет кнопки «Скопировать» после результата',

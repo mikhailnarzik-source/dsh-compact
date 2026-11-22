@@ -1,6 +1,6 @@
 {
   "name": "dsh-compact",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Сжатие длинного диалога без нейросети: локальная выжимка из журнала сессии DSH",
   "type": "module",
   "license": "MIT",
