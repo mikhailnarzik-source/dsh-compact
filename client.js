@@ -94,6 +94,64 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Единая система кнопок плагина (спека `.tools/plugin-design-spec-v2.md`):
+     * высота 36 px (маленькие в шапке — 32), padding 0 14, радиус 10,
+     * шрифт 600 12.5, ширина — по тексту. Все варианты — только токены темы.
+     *
+     * primary — мягкая заливка brand + текст brand. Белый фон с белым текстом
+     * запрещён: в тёмной теме brand-primary сам белый, поэтому старые
+     * `button-primary-fill` + `label-primary-inverted` давали нечитаемый текст.
+     */
+    const BTN_BASE = {
+      boxSizing: 'border-box',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      height: 36,
+      padding: '0 14px',
+      borderRadius: 10,
+      fontFamily: 'inherit',
+      fontSize: 12.5,
+      fontWeight: 600,
+      lineHeight: 1,
+      whiteSpace: 'nowrap',
+      cursor: 'pointer',
+      transition: 'background-color .14s ease, border-color .14s ease, color .14s ease',
+    }
+    const BTN = {
+      base: BTN_BASE,
+      primary: {
+        ...BTN_BASE,
+        border: '1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent)',
+        background: 'color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent)',
+        color: 'var(--dsw-alias-brand-primary)',
+      },
+      secondary: {
+        ...BTN_BASE,
+        border: '1px solid var(--dsw-alias-border-l4)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-primary)',
+      },
+      danger: {
+        ...BTN_BASE,
+        border: '1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 50%, transparent)',
+        background: 'color-mix(in srgb, var(--dsw-alias-state-error-primary) 16%, transparent)',
+        color: 'var(--dsw-alias-state-error-primary)',
+      },
+      small: { ...BTN_BASE, height: 32, padding: '0 12px' },
+      icon: {
+        ...BTN_BASE,
+        width: 32,
+        height: 32,
+        padding: 0,
+        border: '1px solid var(--dsw-alias-border-l4)',
+        background: 'transparent',
+        color: 'var(--dsw-alias-label-secondary)',
+      },
+    }
+
+    /**
      * Страница плагина в едином стиле DSH: контент по центру (maxWidth 960),
      * шапка с иконкой и статусом, карточки-секции, адаптив в одну колонку.
      * Цвета — только токены темы; жёстких hex нет.
@@ -140,7 +198,7 @@ window.__ModuleLoader__.load({
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
       },
-      headRight: { display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flex: '0 0 auto' },
+      headRight: { display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flex: '0 0 auto', flexWrap: 'wrap', minWidth: 0 },
       chip: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -153,34 +211,8 @@ window.__ModuleLoader__.load({
         whiteSpace: 'nowrap',
       },
       dot: { width: 7, height: 7, borderRadius: '50%', flex: '0 0 auto' },
-      refresh: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 32,
-        padding: '0 12px',
-        borderRadius: 10,
-        border: '1px solid var(--dsw-alias-border-l4)',
-        background: 'transparent',
-        color: 'var(--dsw-alias-label-primary)',
-        font: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 600,
-        cursor: 'pointer',
-      },
-      iconButton: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 28,
-        height: 28,
-        padding: 0,
-        borderRadius: 8,
-        border: '1px solid var(--dsw-alias-border-l4)',
-        background: 'transparent',
-        color: 'var(--dsw-alias-label-secondary)',
-        cursor: 'pointer',
-      },
+      refresh: { ...BTN.secondary, height: 32 },
+      iconButton: { ...BTN.icon },
       card: {
         boxSizing: 'border-box',
         minWidth: 0,
@@ -197,9 +229,10 @@ window.__ModuleLoader__.load({
       sectionTitle: { margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: 'var(--dsw-alias-label-primary)' },
       grid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
         gap: 16,
-        alignItems: 'start',
+        alignItems: 'stretch',
+        minWidth: 0,
       },
       field: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 },
       label: { fontSize: 12, fontWeight: 600, color: 'var(--dsw-alias-label-secondary)' },
@@ -229,36 +262,8 @@ window.__ModuleLoader__.load({
         fontSize: 12.5,
         colorScheme: 'inherit',
       },
-      primary: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 36,
-        padding: '0 14px',
-        borderRadius: 10,
-        border: '1px solid transparent',
-        background: 'var(--dsw-alias-button-primary-fill)',
-        color: 'var(--dsw-alias-label-primary-inverted)',
-        font: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 600,
-        cursor: 'pointer',
-      },
-      secondary: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 36,
-        padding: '0 14px',
-        borderRadius: 10,
-        border: '1px solid var(--dsw-alias-border-l4)',
-        background: 'transparent',
-        color: 'var(--dsw-alias-label-primary)',
-        font: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 600,
-        cursor: 'pointer',
-      },
+      primary: { ...BTN.primary },
+      secondary: { ...BTN.secondary },
       actions: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
       counters: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 },
       badge: {
@@ -302,12 +307,22 @@ window.__ModuleLoader__.load({
       emptyText: { fontSize: 12.5, lineHeight: 1.5, color: 'var(--dsw-alias-label-tertiary)' },
     }
 
-    /** CSS, который нельзя задать inline: адаптив, фокус и отключённые кнопки. */
+    /** CSS, который нельзя задать inline: наведение, фокус, disabled и адаптив. */
     const PAGE_CSS = [
-      '.dshcm-page-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}',
+      // Сетка полей: auto-fit, на узком экране — одна колонка.
+      '.dshcm-page-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:stretch;}',
+      // Кнопки — единая система: ширина по тексту, мягкие заливки из токенов.
+      '.dshcm-page-primary,.dshcm-page-button,.dshcm-page-refresh,.dshcm-page-icon{flex:0 0 auto;min-width:0;}',
+      '.dshcm-page-primary:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-brand-primary) 28%,transparent) !important;}',
+      '.dshcm-page-button:hover:not(:disabled),.dshcm-page-refresh:hover:not(:disabled),.dshcm-page-icon:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover) !important;}',
+      '.dshcm-page-primary:active:not(:disabled),.dshcm-page-button:active:not(:disabled){transform:translateY(1px);}',
       '.dshcm-page-field:focus-visible,.dshcm-page-primary:focus-visible,.dshcm-page-button:focus-visible,.dshcm-page-refresh:focus-visible,.dshcm-page-icon:focus-visible{outline:2px solid color-mix(in srgb,var(--dsw-alias-brand-primary) 55%,transparent);outline-offset:1px;}',
-      '.dshcm-page-primary:disabled,.dshcm-page-button:disabled{opacity:.55;cursor:default;}',
-      '@media (max-width: 760px){.dshcm-page{padding:18px 16px 32px !important;}.dshcm-page-grid{grid-template-columns:1fr !important;}}',
+      '.dshcm-page-primary:disabled,.dshcm-page-button:disabled,.dshcm-page-refresh:disabled{opacity:.55;cursor:default;}',
+      // Адаптив: длинные строки переносятся, кнопки — в строку по тексту.
+      '.dshcm-page{overflow-wrap:anywhere;}',
+      '.dshcm-page-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;margin-top:auto;}',
+      '@media (max-width: 900px){.dshcm-page{padding:20px 18px 36px !important;}.dshcm-page-grid{grid-template-columns:1fr !important;}}',
+      '@media (max-width: 640px){.dshcm-page{padding:16px 14px 28px !important;}.dshcm-page-head{gap:10px;}.dshcm-page-head-right{flex:1 1 100%;margin-left:0;}}',
     ].join('\n')
 
     let translate = (key) => key
@@ -392,7 +407,7 @@ window.__ModuleLoader__.load({
         ),
         h(
           'div',
-          { style: UI.headRight },
+          { className: 'dshcm-page-head-right', style: UI.headRight },
           h('span', { style: UI.chip }, h('span', { style: { ...UI.dot, background: chipTone } }), chipLabel),
           h(
             'button',
@@ -699,7 +714,7 @@ function CompactCard() {
             { key: 'result', title: t('resultLabel') },
             h(
               'div',
-              { style: UI.actions },
+              { className: 'dshcm-page-actions' },
               h(
                 'button',
                 {

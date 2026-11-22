@@ -1,7 +1,8 @@
 /**
  * Проверки рендера страницы плагина (слот `plugins.detail.section`) в едином
  * стиле DSH: контент по центру (maxWidth 960), шапка с иконкой и статус-чипом,
- * карточки-секции, кнопки и поля по сетке, адаптив и только токены темы.
+ * карточки-секции, единая система кнопок (спека `.tools/plugin-design-spec-v2.md`),
+ * адаптив и только токены темы.
  *
  * `client.js` исполняется в vm с поддельным `window.__ModuleLoader__` и
  * минимальным React: настоящий браузер для проверки разметки не нужен.
@@ -107,6 +108,30 @@ function textsOf(node, out = []) {
   return out
 }
 
+/** Все <style> страницы одним текстом. */
+function pageCss(nodes) {
+  return nodes
+    .filter((node) => node.type === 'style')
+    .flatMap((node) => node.children)
+    .join('\n')
+}
+
+/** Состояние React для страницы с загруженным списком сессий. */
+function loadedStates() {
+  return [
+    true,
+    { sessions: [{ id: 'abc12345', title: 'Тестовая сессия', createdAt: 1700000000000 }], zstd: true, settings: { minBudget: 300, maxBudget: 200000 } },
+    false,
+    'abc12345',
+    '6000',
+    false,
+    { before: 1000, after: 250, markdown: '# Выжимка' },
+    false,
+    '',
+    '',
+  ]
+}
+
 test('страница: центрированный контейнер maxWidth 960 и адаптив', () => {
   const { nodes } = renderDetail()
   const page = nodes.find((node) => node.props?.style?.maxWidth === 960)
@@ -120,12 +145,9 @@ test('страница: центрированный контейнер maxWidth
   assert.equal(style.flexDirection, 'column')
   assert.equal(style.gap, 16)
 
-  const css = nodes
-    .filter((node) => node.type === 'style')
-    .flatMap((node) => node.children)
-    .join('\n')
-  assert.match(css, /@media \(max-width: 760px\)/)
-  assert.match(css, /padding:18px 16px 32px/)
+  const css = pageCss(nodes)
+  assert.match(css, /@media \(max-width: 900px\)/, 'на 900 px — одна колонка')
+  assert.match(css, /@media \(max-width: 640px\)/, 'на 640 px — компактные поля')
   assert.match(css, /grid-template-columns:1fr/)
 })
 
@@ -153,24 +175,13 @@ test('шапка: иконка 52, заголовок 20/600, статус-чи�
   assert.ok(refresh, 'нет кнопки «Обновить» в шапке')
   assert.equal(refresh.props.style.height, 32)
   assert.equal(refresh.props.style.borderRadius, 10)
+  assert.equal(refresh.props.style.padding, '0 14px')
   assert.equal(refresh.props.style.background, 'transparent')
   assert.equal(typeof refresh.props.onClick, 'function')
 })
 
 test('контент: карточки-секции, кнопка primary 36/10 и поле 34/9', () => {
-  const states = [
-    true,
-    { sessions: [{ id: 'abc12345', title: 'Тестовая сессия', createdAt: 1700000000000 }], zstd: true, settings: { minBudget: 300, maxBudget: 200000 } },
-    false,
-    'abc12345',
-    '6000',
-    false,
-    null,
-    false,
-    '',
-    '',
-  ]
-  const { nodes } = renderDetail(states)
+  const { nodes } = renderDetail(loadedStates())
   const cards = nodes.filter(
     (node) => node.type === 'section' && node.props?.style?.borderRadius === 14,
   )
@@ -180,6 +191,8 @@ test('контент: карточки-секции, кнопка primary 36/10 
     assert.equal(card.props.style.border, '1px solid var(--dsw-alias-border-l2)')
     assert.equal(card.props.style.padding, 16)
     assert.equal(card.props.style.gap, 12)
+    assert.equal(card.props.style.flexDirection, 'column')
+    assert.equal(card.props.style.minWidth, 0)
   }
 
   const bars = nodes.filter(
@@ -199,7 +212,8 @@ test('контент: карточки-секции, кнопка primary 36/10 
   assert.ok(primary, 'нет кнопки «Сжать»')
   assert.equal(primary.props.style.height, 36)
   assert.equal(primary.props.style.borderRadius, 10)
-  assert.equal(primary.props.style.background, 'var(--dsw-alias-button-primary-fill)')
+  assert.match(String(primary.props.style.background), /color-mix\(in srgb, ?var\(--dsw-alias-brand-primary\) 18%, ?transparent\)/)
+  assert.equal(primary.props.style.color, 'var(--dsw-alias-brand-primary)')
 
   const input = nodes.find((node) => node.type === 'input' && node.props?.type === 'number')
   assert.ok(input, 'нет поля размера выжимки')
@@ -207,11 +221,69 @@ test('контент: карточки-секции, кнопка primary 36/10 
   assert.equal(input.props.style.borderRadius, 9)
   assert.equal(input.props.style.border, '1px solid var(--dsw-alias-border-l2)')
   assert.equal(input.props.style.background, 'var(--dsw-alias-bg-layer-2)')
+  assert.equal(input.props.style.width, '100%')
 
   const select = nodes.find((node) => node.type === 'select')
   assert.ok(select, 'нет выбора сессии')
   assert.equal(select.props.style.height, 34)
   assert.equal(select.props.style.borderRadius, 9)
+})
+
+test('единая система кнопок: 36/32, радиус 10, мягкая заливка brand', () => {
+  const { nodes } = renderDetail(loadedStates())
+  const buttons = nodes.filter((node) => node.type === 'button')
+  assert.ok(buttons.length >= 3, 'на странице есть кнопки')
+
+  for (const button of buttons) {
+    const style = button.props.style ?? {}
+    assert.ok([32, 36].includes(style.height), `высота кнопки 32 или 36, а не ${style.height}`)
+    assert.equal(style.borderRadius, 10, 'радиус кнопки 10')
+    assert.equal(style.display, 'inline-flex', 'кнопка — inline-flex')
+    assert.equal(style.fontWeight, 600, 'кнопка — 600')
+    assert.equal(style.fontSize, 12.5, 'кнопка — 12.5')
+    assert.equal(style.whiteSpace, 'nowrap', 'подпись кнопки не переносится')
+    if (textsOf(button).join('').trim() !== '') {
+      assert.equal(style.width, undefined, 'у текстовой кнопки нет фиксированной ширины')
+      assert.equal(style.minWidth, undefined, 'у кнопки нет фиксированной min-width')
+    }
+    const color = String(style.color ?? '')
+    assert.doesNotMatch(color, /#fff|#ffffff|label-primary-inverted/i, 'нет белого текста на кнопке')
+  }
+
+  const secondary = nodes.find(
+    (node) => node.type === 'button' && textsOf(node).includes('t:copy'),
+  )
+  assert.ok(secondary, 'нет вторичной кнопки «Скопировать»')
+  assert.equal(secondary.props.style.background, 'transparent')
+  assert.equal(secondary.props.style.color, 'var(--dsw-alias-label-primary)')
+
+  const css = pageCss(nodes)
+  assert.match(css, /\.dshcm-page-primary:hover:not\(:disabled\)/, 'есть hover у primary')
+  assert.match(css, /\.dshcm-page-primary:disabled/, 'есть disabled у primary')
+  assert.match(css, /:focus-visible/, 'есть фокус-рамка у кнопок')
+  assert.doesNotMatch(css, /#fff|#ffffff/i, 'в CSS нет белого текста')
+})
+
+test('адаптив: сетка auto-fit, перенос кнопок и длинных строк', () => {
+  const { nodes } = renderDetail(loadedStates())
+  const grid = nodes.find((node) => node.props?.style?.display === 'grid')
+  assert.ok(grid, 'нет сетки полей')
+  assert.equal(grid.props.style.gridTemplateColumns, 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))')
+  assert.equal(grid.props.style.alignItems, 'stretch')
+  assert.equal(grid.props.style.minWidth, 0)
+
+  const headRight = nodes.find((node) => node.props?.className === 'dshcm-page-head-right')
+  assert.ok(headRight, 'правая часть шапки переносится')
+  assert.equal(headRight.props.style.flexWrap, 'wrap')
+
+  const actions = nodes.find((node) => node.props?.className === 'dshcm-page-actions')
+  assert.ok(actions, 'строка кнопок переносится')
+
+  assert.match(SOURCE, /overflowWrap: 'anywhere'/, 'у подсказок есть overflow-wrap:anywhere')
+  const css = pageCss(nodes)
+  assert.match(css, /\.dshcm-page\{overflow-wrap:anywhere;\}/)
+  assert.match(css, /\.dshcm-page-actions\{[^}]*flex-wrap:wrap/)
+  assert.match(css, /\.dshcm-page-actions\{[^}]*margin-top:auto/, 'футер прижат к низу')
 })
 
 test('пустое состояние: иконка 32, текст и подсказка', () => {
@@ -249,13 +321,14 @@ test('чип показывает готовую выжимку и её счёт
   )
 })
 
-test('цвета: только токены темы, жёстких hex нет', () => {
-  const { nodes } = renderDetail()
+test('цвета: только токены темы, жёстких hex и белого текста нет', () => {
+  const { nodes } = renderDetail(loadedStates())
   const styles = nodes
     .map((node) => node.props?.style)
     .filter((style) => style !== undefined && style !== null)
   const dump = JSON.stringify(styles)
   assert.doesNotMatch(dump, /#[0-9a-fA-F]{3,8}\b/, 'в стилях есть жёсткий hex-цвет')
+  assert.doesNotMatch(dump, /label-primary-inverted/, 'нет белого текста через label-primary-inverted')
   assert.match(dump, /var\(--dsw-alias-/, 'в стилях нет токенов темы')
 })
 
