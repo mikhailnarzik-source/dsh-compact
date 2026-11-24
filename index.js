@@ -144,28 +144,73 @@ async function listSessions(ctx) {
 }
 
 /**
- * Заголовок сессии (`session/title`) лежит в начале журнала: читаем только
- * префикс и распаковываем те кадры, что в него целиком поместились.
+ * Заголовок сессии (`session/title`) может меняться по ходу работы: DSH сначала
+ * пишет предварительное имя (первое сообщение), затем настоящее. Ищем последнее
+ * событие окнами от конца файла (1, 4, 16, 64 МБ), поэтому список показывает
+ * актуальное название, а не первое сообщение.
  */
-async function readTitle(path) {
+const ZSTD_MAGIC_BYTES = [0x28, 0xb5, 0x2f, 0xfd]
+const TITLE_CACHE_LIMIT = 300
+const titleCache = new Map()
+
+function titleFromWindow(bytes) {
+  if (!Buffer.isBuffer(bytes) || bytes.length === 0) return ''
+  let from = -1
+  for (let index = 0; index + 4 <= bytes.length; index += 1) {
+    if (ZSTD_MAGIC_BYTES.every((value, offset) => bytes[index + offset] === value)) { from = index; break }
+  }
+  const view = from === -1 ? bytes : bytes.subarray(from)
   try {
-    const handle = await open(path, 'r')
-    try {
-      const buffer = Buffer.alloc(TITLE_PREFIX_BYTES)
-      let offset = 0
-      while (offset < buffer.length) {
-        const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, offset)
-        if (bytesRead <= 0) break
-        offset += bytesRead
-      }
-      if (offset <= 0) return ''
-      return extractTitleFromText(decompressLog(buffer.subarray(0, offset)))
-    } finally {
-      await handle.close()
-    }
+    return extractTitleFromText(view.length >= 4 && ZSTD_MAGIC_BYTES.every((value, offset) => view[offset] === value)
+      ? decompressLog(view)
+      : view.toString('utf8'))
   } catch {
     return ''
   }
+}
+
+async function readRange(path, start, end) {
+  const handle = await open(path, 'r')
+  try {
+    const length = Math.max(0, end - start)
+    if (length === 0) return Buffer.alloc(0)
+    const buffer = Buffer.alloc(length)
+    await handle.read(buffer, 0, length, start)
+    return buffer
+  } finally {
+    await handle.close().catch(() => {})
+  }
+}
+
+async function readTitle(path) {
+  let info
+  try {
+    info = await stat(path)
+  } catch {
+    return ''
+  }
+  if (!info.isFile() || info.size <= 0) return ''
+  const cached = titleCache.get(path)
+  if (cached !== undefined && cached.mtimeMs === info.mtimeMs && cached.size === info.size) return cached.title
+  let title = ''
+  try {
+    let window = 1024 * 1024
+    while (true) {
+      const start = Math.max(0, info.size - window)
+      const bytes = await readRange(path, start, info.size)
+      title = titleFromWindow(bytes)
+      if (title !== '' || start === 0) break
+      window *= 4
+    }
+  } catch {
+    title = ''
+  }
+  if (titleCache.size >= TITLE_CACHE_LIMIT) {
+    const oldest = titleCache.keys().next()
+    if (!oldest.done) titleCache.delete(oldest.value)
+  }
+  titleCache.set(path, { mtimeMs: info.mtimeMs, size: info.size, title })
+  return title
 }
 
 async function attachTitles(sessions, limit) {
